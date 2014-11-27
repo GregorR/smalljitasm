@@ -45,6 +45,36 @@ struct SJA_X8664_Instruction sja_x8664_inst_ ## n = { \
             (ESA {ES(MRMR), 0, 1, ES(END)})) \
     })
 
+/* the MUL/DIV and family instructions also have a fixed format */
+#define MULDIV(r8o, r8r, r64o, r64r, mul) \
+    (IEA { \
+        ENC(OTRM, 1, 0, 0, 0, 0, r8o, \
+            (ESA {ES(r8r), ES(END)})), \
+        ENC(OTRM, W2Q, 0, 0, 0, 0, r64o, \
+            (ESA {ES(r64r), ES(END)})) \
+        mul \
+    })
+
+/* the MUL instructions extend it */
+#define MUL(r64rm64o1, r64rm64o2, \
+            r64rm64i8, \
+            r16rm16i16, \
+            r64rm64i32) , \
+        ENC(OT(REG), W2Q, OTRM, W2Q, 0, 0, r64rm64o1, \
+            (ESA {ES(FIX), r64rm64o2, ES(MRMR), 0, 1, ES(END)})), \
+        ENC(OT(REG), W2Q, OTRM, W2Q, OT(IMM), 1, r64rm64i8, \
+            (ESA {ES(MRMR), 0, 1, ES(IMM8), 2, ES(END)})), \
+        ENC(OT(REG), 2, OTRM, 2, OT(IMM), 2, r16rm16i16, \
+            (ESA {ES(MRMR), 0, 1, ES(IMM16), 2, ES(END)})), \
+        ENC(OT(REG), D2Q, OTRM, D2Q, OT(IMM), 4, r64rm64i32, \
+            (ESA {ES(MRMR), 0, 1, ES(IMM32), 2, ES(END)}))
+
+#define BLANK
+
+/***************************************************************
+ * ACTUAL INSTRUCTION FORMATS BELOW
+ ***************************************************************/
+
 /* ADD */
 INST(ADD, ALU(
     0x80, MRM0,
@@ -53,6 +83,65 @@ INST(ADD, ALU(
     0x83, MRM0,
     0x00, 0x01, 0x02, 0x03
 ));
+
+/* AND */
+INST(AND, ALU(
+    0x80, MRM4,
+    0x81, MRM4,
+    0x81, MRM4,
+    0x83, MRM4,
+    0x20 ,0x21, 0x22, 0x23
+));
+
+/* CMP */
+INST(CMP, ALU(
+    0x80, MRM7,
+    0x81, MRM7,
+    0x81, MRM7,
+    0x83, MRM7,
+    0x38, 0x39, 0x3A, 0x3B
+));
+
+/* DIV */
+INST(DIV, MULDIV(0xF6, MRM6, 0xF7, MRM6, BLANK));
+
+/* ENTER */
+INST(ENTER, (IEA {
+    ENC(OT(IMM), 2, OT(IMM), 1, 0, 0, 0xC8,
+        (ESA {ES(IMM16), 0, ES(IMM8), 1, ES(END)}))
+}));
+
+/* IDIV */
+INST(IDIV, MULDIV(0xF6, MRM7, 0xF7, MRM7, BLANK));
+
+/* IMUL */
+INST(IMUL, MULDIV(0xF6, MRM5, 0xF7, MRM5, MUL(
+    0x0F, 0xAF,
+    0x6B, 0x69, 0x69)));
+
+/* LEA */
+INST(LEA, (IEA {
+    ENC(OT(REG), W2Q, OT(MEM), W2Q, 0, 0, 0x8D,
+        (ESA {ES(MRMR), 0, 1, ES(END)}))
+}));
+
+/* LEAVE */
+INST(LEAVE, (IEA {
+    ENC(0, 0, 0, 0, 0, 0, 0xC9,
+        (ESA {ES(END)}))
+}));
+
+/* MOV */
+INST(MOV, ALU(
+    0xC6, MRM0,
+    0xC7, MRM0,
+    0xC7, MRM0,
+    /* FIXME: WRONG */ 0xC6, MRM0,
+    0x88, 0x89, 0x8A, 0x8B
+));
+
+/* MUL */
+INST(MUL, MULDIV(0xF6, MRM4, 0xF7, MRM4, BLANK));
 
 /* SUB */
 INST(SUB, ALU(

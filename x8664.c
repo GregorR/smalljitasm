@@ -99,6 +99,8 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
 #define REXX *rex |= 0x2
 #define REXR *rex |= 0x4
 
+    /* FIXME: This is where we would do the 16-bit prefix too */
+
     /* now write the opcode */
     WRITE_ONE_BUFFER(*buf, enc->opcode);
 
@@ -107,6 +109,13 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
         unsigned char step = enc->steps[si];
         if (step == SJA_X8664_ES_END) break;
         switch (step) {
+            case SJA_X8664_ES_FIX:
+            {
+                unsigned char arg = enc->steps[++si];
+                WRITE_ONE_BUFFER(*buf, arg);
+                break;
+            }
+
             case SJA_X8664_ES_IMM8:
             case SJA_X8664_ES_IMM16:
             case SJA_X8664_ES_IMM32:

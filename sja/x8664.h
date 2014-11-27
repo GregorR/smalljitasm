@@ -173,6 +173,7 @@ struct SJA_X8664_Operand {
  * */
 enum sja_x8664_encoding_step {
     SJA_X8664_ES_END,
+    SJA_X8664_ES_FIX, /* fixed value */
     SJA_X8664_ES_IMM8,
     SJA_X8664_ES_IMM16,
     SJA_X8664_ES_IMM32,
