@@ -162,8 +162,10 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
 
                     /* but we also need a sib if the register isn't otherwise supported */
                     else if (op.o[arg].reg.reg == SJA_X8664_SP ||
-                             op.o[arg].reg.reg == SJA_X8664_R12 ||
-                             op.o[arg].reg.reg > SJA_X8664_R15) sib = 1;
+                             op.o[arg].reg.reg == SJA_X8664_R12) sib = 1;
+
+                    /* and we need a sib to do absolute addressing */
+                    else if (op.o[arg].reg.reg == SJA_X8664_RNONE) sib = 1;
                 }
 
                 /* OK, we know which bytes we need. Now make them */
@@ -180,6 +182,7 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                      *     1. Displacement but no base
                      *     2. Base but no displacement
                      *     3. Neither base nor displacement
+                     *     4. RIP-relative addressing
                      * 01: 8-bit displacement
                      * 10: 32-bit displacement
                      *
@@ -192,6 +195,12 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                             mrmv |= (0x2 << 6);
                         else
                             mrmv |= (0x1 << 6);
+
+                    } else if (op.o[arg].reg.reg == SJA_X8664_RIP) {
+                        /* for RIP-relative addressing, we must set the mode to
+                         * 00 and the register to 101b */
+                        /* 00 */
+                        disp = 4;
 
                     } else if (((op.o[arg].reg.reg != SJA_X8664_RNONE) != !!op.o[arg].disp) ||
                                ((op.o[arg].reg.reg == SJA_X8664_RNONE) && !op.o[arg].disp)) {
@@ -233,6 +242,12 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                     /* if we need a sib, we indicate that with 100b */
                     if (sib) {
                         mrmv |= 0x4;
+
+                    /* if we wanted no register at all or RIP-relative
+                     * addressing, we indicate that with 101b */
+                    } else if (op.o[arg].reg.reg == SJA_X8664_RNONE ||
+                               op.o[arg].reg.reg == SJA_X8664_RIP) {
+                        mrmv |= 0x5;
 
                     } else {
                         /* no sib, just encode the register here */

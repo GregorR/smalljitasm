@@ -145,6 +145,8 @@ struct SJA_X8664_Operand {
 #define R15D SJA_X8664_OREG(4, SJA_X8664_R15)
 #define R15 SJA_X8664_OREG(8, SJA_X8664_R15)
 
+#define RIP SJA_X8664_OREG(8, SJA_X8664_RIP)
+
 #endif /* USE_SJA_X8664_SHORT_NAMES */
 
 /* encodings for MEM (SIB) operands */
