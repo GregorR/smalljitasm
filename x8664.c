@@ -149,9 +149,15 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                 if (op.o[arg].type == SJA_X8664_OTYPE_MEM) {
                     m = 1;
 
-                    disp = op.o[arg].disp ? 1 : 0;
+                    /* how shall we handle our displacement? */
+                    if (op.o[arg].disp >= 0x80 || op.o[arg].disp < -0x80)
+                        disp = 4;
+                    else if (op.o[arg].disp)
+                        disp = 1;
+                    else
+                        disp = 0;
 
-                    /* certainly we need a sib if there's an offset... */
+                    /* certainly we need a sib if there's an index... */
                     if (op.o[arg].imm) sib = 1;
 
                     /* but we also need a sib if the register isn't otherwise supported */
@@ -174,20 +180,32 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                      *     1. Displacement but no base
                      *     2. Base but no displacement
                      *     3. Neither base nor displacement
-                     *     4. Base is RBP or R13 with or without displacement
-                     * 01: 8-bit displacement (never used)
-                     * 10: 32-bit displacement */
-                    if (((op.o[arg].reg.reg != SJA_X8664_RNONE) != !!op.o[arg].disp) ||
-                        ((op.o[arg].reg.reg == SJA_X8664_RNONE) && !op.o[arg].disp)) {
+                     * 01: 8-bit displacement
+                     * 10: 32-bit displacement
+                     *
+                     * Because of nonsense addressing, RBP must always have a
+                     * displacement. */
+                    if (op.o[arg].reg.reg == SJA_X8664_BP || op.o[arg].reg.reg == SJA_X8664_R13) {
+                        /* BP MUST have a displacement */
+                        if (!disp) disp = 1;
+                        if (disp == 4)
+                            mrmv |= (0x2 << 6);
+                        else
+                            mrmv |= (0x1 << 6);
+
+                    } else if (((op.o[arg].reg.reg != SJA_X8664_RNONE) != !!op.o[arg].disp) ||
+                               ((op.o[arg].reg.reg == SJA_X8664_RNONE) && !op.o[arg].disp)) {
                         /* 00 */
+                        if (disp) disp = 4;
 
-                    } else if (op.o[arg].reg.reg == SJA_X8664_BP || op.o[arg].reg.reg == SJA_X8664_R13) {
-                        /* 00 with forced displacement */
-                        disp = 1;
-
-                    } else if (op.o[arg].disp) {
-                        /* index and displacement */
-                        mrmv |= (0x2 << 6);
+                    } else if (disp) {
+                        /* base and displacement */
+                        if (disp == 4) {
+                            /* 32-bit displacement */
+                            mrmv |= (0x2 << 6);
+                        } else {
+                            mrmv |= (0x1 << 6);
+                        }
 
                     }
 
@@ -254,6 +272,14 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                     /* then comes the index */
                     if (op.o[arg].imm) {
                         /* it has an index */
+
+                        /* RSP is used for encoding no index, and so cannot be
+                         * used as an index */
+                        if (op.o[arg].index.reg == SJA_X8664_SP) {
+                            fprintf(stderr, "Invalid register use: SP cannot be an index.\n");
+                            exit(1);
+                        }
+
                         sibv |= ((op.o[arg].index.reg & 0x7) << 3);
                         if (op.o[arg].index.reg >= SJA_X8664_R8)
                             /* extra bit goes in rex's X bit (bit 0) */
@@ -268,10 +294,10 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                     /* then the base */
                     if (op.o[arg].reg.reg == SJA_X8664_RNONE) {
                         /* "none" is represented by 101b */
-                        sibv |= (0x5 << 3);
+                        sibv |= 0x5;
 
                     } else {
-                        sibv |= ((op.o[arg].reg.reg & 0x7) << 3);
+                        sibv |= (op.o[arg].reg.reg & 0x7);
                         if (op.o[arg].reg.reg >= SJA_X8664_R8)
                             REXB;
 
@@ -281,12 +307,14 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                 }
 
                 if (disp) {
-                    /* now we write a 32-bit displacement */
-                    long disp = op.o[arg].disp;
-                    WRITE_ONE_BUFFER(*buf, disp);
-                    WRITE_ONE_BUFFER(*buf, disp >> 8);
-                    WRITE_ONE_BUFFER(*buf, disp >> 16);
-                    WRITE_ONE_BUFFER(*buf, disp >> 24);
+                    /* now we write the displacement */
+                    long dispv = op.o[arg].disp;
+                    WRITE_ONE_BUFFER(*buf, dispv);
+                    if (disp == 4) {
+                        WRITE_ONE_BUFFER(*buf, dispv >> 8);
+                        WRITE_ONE_BUFFER(*buf, dispv >> 16);
+                        WRITE_ONE_BUFFER(*buf, dispv >> 24);
+                    }
                 }
 
                 break;

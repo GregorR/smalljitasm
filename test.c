@@ -9,14 +9,15 @@
 int main()
 {
     struct Buffer_uchar buf;
-    struct SJA_Operation op;
+    struct SJA_Operation op, nop;
+    memset(&nop, 0, sizeof(nop));
 
     INIT_BUFFER(buf);
 
-    memset(&op, 0, sizeof(op));
-    op.inst = ADD;
-    op.o[0] = RAX;
-    op.o[1] = MEM(0, RNONE, RAX, 1);
+    op = nop;
+    op.inst = SUB;
+    op.o[0] = MEM(0, RNONE, RBP, 10);
+    op.o[1] = RAX;
 
     sja_compile(op, &buf);
 

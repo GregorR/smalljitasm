@@ -1,1 +1,2 @@
 INST(ADD)
+INST(SUB)
