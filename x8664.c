@@ -116,6 +116,13 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                 break;
             }
 
+            case SJA_X8664_ES_ADDREG:
+            {
+                unsigned char arg = enc->steps[++si];
+                buf->buf[buf->bufused-1] += op.o[arg].reg.reg;
+                break;
+            }
+
             case SJA_X8664_ES_IMM8:
             case SJA_X8664_ES_IMM16:
             case SJA_X8664_ES_IMM32:

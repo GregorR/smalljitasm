@@ -45,6 +45,15 @@ struct SJA_X8664_Instruction sja_x8664_inst_ ## n = { \
             (ESA {ES(MRMR), 0, 1, ES(END)})) \
     })
 
+/* unary operations tend to have a familiar form too */
+#define UNARY(rm8o, rm8r, rm64o, rm64r) \
+    (IEA { \
+        ENC(OTRM, 1, 0, 0, 0, 0, rm8o, \
+            (ESA {ES(rm8r), 0, ES(END)})), \
+        ENC(OTRM, W2Q, 0, 0, 0, 0, rm64o, \
+            (ESA {ES(rm64r), 0, ES(END)})) \
+    })
+
 /* the MUL/DIV and family instructions also have a fixed format */
 #define MULDIV(r8o, r8r, r64o, r64r, mul) \
     (IEA { \
@@ -68,6 +77,15 @@ struct SJA_X8664_Instruction sja_x8664_inst_ ## n = { \
             (ESA {ES(MRMR), 0, 1, ES(IMM16), 2, ES(END)})), \
         ENC(OT(REG), D2Q, OTRM, D2Q, OT(IMM), 4, r64rm64i32, \
             (ESA {ES(MRMR), 0, 1, ES(IMM32), 2, ES(END)}))
+
+/* same for shifts */
+#define SHIFT(r8i8o, r8i8r, r64i8o, r64i8r) \
+    (IEA { \
+        ENC(OTRM, 1, OT(IMM), 1, 0, 0, r8i8o, \
+            (ESA {ES(r8i8r), 0, ES(IMM8), 1, ES(END)})), \
+        ENC(OTRM, W2Q, OT(IMM), 1, 0, 0, r64i8o, \
+            (ESA {ES(r64i8r), 0, ES(IMM8), 1, ES(END)})) \
+    })
 
 #define BLANK
 
@@ -143,6 +161,68 @@ INST(MOV, ALU(
 /* MUL */
 INST(MUL, MULDIV(0xF6, MRM4, 0xF7, MRM4, BLANK));
 
+/* NEG */
+INST(NEG, UNARY(0xF6, MRM3, 0xF7, MRM3));
+
+/* NOP */
+INST(NOP, (IEA {
+    ENC(0, 0, 0, 0, 0, 0, 0x90,
+        (ESA {ES(END)})),
+    ENC(OTRM, W2Q, 0, 0, 0, 0, 0x0F,
+        (ESA {ES(FIX), 0x1F, ES(MRM0), 0}))
+}));
+
+/* NOT */
+INST(NOT, UNARY(0xF6, MRM2, 0xF7, MRM2));
+
+/* OR */
+INST(OR, ALU(
+    0x80, MRM1,
+    0x81, MRM1,
+    0x81, MRM1,
+    0x83, MRM1,
+    0x08, 0x09, 0x0A, 0x0B
+));
+
+/* POP */
+INST(POP, (IEA {
+    ENC(OT(REG), W2Q, 0, 0, 0, 0, 0x58,
+        (ESA {ES(ADDREG), 0, ES(END)})),
+    ENC(OTRM, W2Q, 0, 0, 0, 0, 0x8F,
+        (ESA {ES(MRM0), 0, ES(END)}))
+}));
+
+/* PUSH */
+INST(PUSH, (IEA {
+ENC(OT(REG), W2Q, 0, 0, 0, 0, 0x50,
+    (ESA {ES(ADDREG), 0, ES(END)})),
+ENC(OTRM, W2Q, 0, 0, 0, 0, 0xFF,
+    (ESA {ES(MRM0), 0, ES(END)}))
+}));
+
+/* RET */
+INST(RET, (IEA {
+    ENC(0, 0, 0, 0, 0, 0, 0xC3,
+        (ESA {ES(END)})),
+    ENC(OT(IMM), 2, 0, 0, 0, 0, 0xC2,
+        (ESA {ES(IMM16), 0, ES(END)}))
+}));
+
+/* SAL */
+INST(SAL, SHIFT(0xC0, MRM4, 0xC1, MRM4));
+
+/* SAR */
+INST(SAR, SHIFT(0xC0, MRM7, 0xC1, MRM7));
+
+/* SBB */
+INST(SBB, ALU(
+    0x80, MRM3,
+    0x81, MRM3,
+    0x81, MRM3,
+    0x83, MRM3,
+    0x18, 0x19, 0x1A, 0x1B
+));
+
 /* SUB */
 INST(SUB, ALU(
     0x80, MRM5,
@@ -150,4 +230,31 @@ INST(SUB, ALU(
     0x81, MRM5,
     0x83, MRM5,
     0x28, 0x29, 0x2A, 0x2B
+));
+
+/* SHL (same as SAL) */
+INST(SHL, SHIFT(0xC0, MRM4, 0xC1, MRM4));
+
+/* SHLD */
+INST(SHLD, (IEA {
+    ENC(OTRM, W2Q, OT(REG), W2Q, OT(IMM), 1, 0x0F,
+        (ESA {ES(FIX), 0xA4, ES(MRMR), 1, 0, ES(IMM8), 2, ES(END)}))
+}));
+
+/* SHR */
+INST(SHR, SHIFT(0xC0, MRM5, 0xC1, MRM5));
+
+/* SHRD */
+INST(SHRD, (IEA {
+    ENC(OTRM, W2Q, OT(REG), W2Q, OT(IMM), 1, 0x0F,
+        (ESA {ES(FIX), 0xAC, ES(MRMR), 1, 0, ES(IMM8), 2, ES(END)}))
+}));
+
+/* XOR */
+INST(XOR, ALU(
+    0x80, MRM6,
+    0x81, MRM6,
+    0x81, MRM6,
+    0x83, MRM6,
+    0x30, 0x31, 0x32, 0x33
 ));

@@ -58,14 +58,16 @@ struct SJA_X8664_Operand {
 #define SJA_X8664_ONONE \
     ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_NONE, 0, \
         (struct SJA_X8664_Register) {0, 0}, \
-        (struct SJA_X8664_Register) {0, 0} \
+        (struct SJA_X8664_Register) {0, 0}, \
+        0 \
     })
 
 /* encoding for immediate operands */
 #define SJA_X8664_OIMM(val) \
     ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_IMM, val, \
         (struct SJA_X8664_Register) {0, 0}, \
-        (struct SJA_X8664_Register) {0, 0} \
+        (struct SJA_X8664_Register) {0, 0}, \
+        0 \
     })
 #ifdef USE_SJA_X8664_SHORT_NAMES
 #define IMM(val) SJA_X8664_OIMM(val)
@@ -75,7 +77,8 @@ struct SJA_X8664_Operand {
 #define SJA_X8664_OREG(sz, reg) \
     ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_REG, 0, \
         (struct SJA_X8664_Register) {0, 0}, \
-        (struct SJA_X8664_Register) {(sz), (reg)} \
+        (struct SJA_X8664_Register) {(sz), (reg)}, \
+        0 \
     })
 #ifdef USE_SJA_X8664_SHORT_NAMES
 #define RNONE SJA_X8664_OREG(8, SJA_X8664_RNONE)
@@ -150,14 +153,14 @@ struct SJA_X8664_Operand {
 #endif /* USE_SJA_X8664_SHORT_NAMES */
 
 /* encodings for MEM (SIB) operands */
-#define SJA_X8664_OMEM(scale, indexsz, index, basesz, base, disp) \
+#define SJA_X8664_OMEM(basesz, base, scale, indexsz, index, disp) \
     ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_MEM, (scale), \
         (struct SJA_X8664_Register) {(indexsz), (index)}, \
         (struct SJA_X8664_Register) {(basesz), (base)}, \
         (disp) \
     })
 #ifdef USE_SJA_X8664_SHORT_NAMES
-#define MEM(scale, index, base, disp) \
+#define MEM(base, scale, index, disp) \
     ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_MEM, (scale), \
         (index).reg, \
         (base).reg, \
@@ -174,6 +177,7 @@ struct SJA_X8664_Operand {
 enum sja_x8664_encoding_step {
     SJA_X8664_ES_END,
     SJA_X8664_ES_FIX, /* fixed value */
+    SJA_X8664_ES_ADDREG, /* add the register to the opcode */
     SJA_X8664_ES_IMM8,
     SJA_X8664_ES_IMM16,
     SJA_X8664_ES_IMM32,
@@ -220,13 +224,13 @@ struct SJA_X8664_Operation {
 };
 
 #define SJA_X8664_OP3(inst, o1, o2, o3) \
-    ((struct SJA_X8664_Operation) { (inst), (struct SJA_X8664_Operand[]) {(o1), (o2), (o3)} })
+    ((struct SJA_X8664_Operation) { (inst), {(o1), (o2), (o3)} })
 #define SJA_X8664_OP2(inst, o1, o2) \
-    SJA_X8664_O3(inst, o1, o2, SJA_X8664_ONONE)
+    SJA_X8664_OP3(inst, o1, o2, SJA_X8664_ONONE)
 #define SJA_X8664_OP1(inst, o1) \
-    SJA_X8664_O3(inst, o1, SJA_X8664_ONONE, SJA_X8664_ONONE)
+    SJA_X8664_OP3(inst, o1, SJA_X8664_ONONE, SJA_X8664_ONONE)
 #define SJA_X8664_OP0(inst) \
-    SJA_X8664_O3(inst, SJA_X8664_ONONE, SJA_X8664_ONONE, SJA_X8664_ONONE)
+    SJA_X8664_OP3(inst, SJA_X8664_ONONE, SJA_X8664_ONONE, SJA_X8664_ONONE)
 #ifdef USE_SJA_X8664_SHORT_NAMES
 #define OP3 SJA_X8664_OP3
 #define OP2 SJA_X8664_OP2
