@@ -19,6 +19,9 @@
 BUFFER(uchar, unsigned char);
 
 /* append an operation to a program fragment */
-void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf);
+void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf, size_t *frel);
+
+/* patch an frel entry to point to the next instruction */
+void sja_patchFrel(struct Buffer_uchar *buf, size_t frel);
 
 #endif

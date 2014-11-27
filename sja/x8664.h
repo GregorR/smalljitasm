@@ -38,13 +38,19 @@ struct SJA_X8664_Register {
 enum sja_x8664_operand_type {
     SJA_X8664_OTYPE_NONE = 0,
     SJA_X8664_OTYPE_IMM = 1,
-    SJA_X8664_OTYPE_REG = 2,
-    SJA_X8664_OTYPE_MEM = 4 /* scale*index + base */
+    SJA_X8664_OTYPE_RREL = 2, /* reverse relative address */
+    SJA_X8664_OTYPE_FREL = 4, /* forward relative address (to be patched) */
+    SJA_X8664_OTYPE_REG = 8,
+    SJA_X8664_OTYPE_MEM = 16 /* scale*index + base */
 };
 
 struct SJA_X8664_Operand {
     unsigned char type;
-    /* the immediate value for IMM, or scale for MEM, which may be 0, 1, 2, 4 or 8 */
+    /* represents:
+     *  * the immediate value for IMM
+     *  * relative offset for RREL (relative to the beginning of the code buffer)
+     *  * scale for MEM, which may be 0, 1, 2, 4 or 8
+     */
     long imm;
     /* the index for MEM, ignored otherwise */
     struct SJA_X8664_Register index;
@@ -63,14 +69,19 @@ struct SJA_X8664_Operand {
     })
 
 /* encoding for immediate operands */
-#define SJA_X8664_OIMM(val) \
-    ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_IMM, val, \
+#define SJA_X8664_OIMMISH(type, val) \
+    ((struct SJA_X8664_Operand) { type, val, \
         (struct SJA_X8664_Register) {0, 0}, \
         (struct SJA_X8664_Register) {0, 0}, \
         0 \
     })
+#define SJA_X8664_OIMM(val) SJA_X8664_OIMMISH(SJA_X8664_OTYPE_IMM, val)
+#define SJA_X8664_ORREL(val) SJA_X8664_OIMMISH(SJA_X8664_OTYPE_RREL, val)
+#define SJA_X8664_OFREL SJA_X8664_OIMMISH(SJA_X8664_OTYPE_FREL, 0)
 #ifdef USE_SJA_X8664_SHORT_NAMES
 #define IMM(val) SJA_X8664_OIMM(val)
+#define RREL(val) SJA_X8664_ORREL(val)
+#define FREL SJA_X8664_OFREL
 #endif
 
 /* encodings for register operands */
@@ -181,7 +192,10 @@ enum sja_x8664_encoding_step {
     SJA_X8664_ES_IMM8,
     SJA_X8664_ES_IMM16,
     SJA_X8664_ES_IMM32,
-    SJA_X8664_ES_IMM64,
+    SJA_X8664_ES_RREL8,
+    SJA_X8664_ES_RREL16,
+    SJA_X8664_ES_RREL32,
+    SJA_X8664_ES_FREL32,
     SJA_X8664_ES_MRM0,
     SJA_X8664_ES_MRM1,
     SJA_X8664_ES_MRM2,

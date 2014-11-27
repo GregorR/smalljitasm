@@ -87,6 +87,20 @@ struct SJA_X8664_Instruction sja_x8664_inst_ ## n = { \
             (ESA {ES(r64i8r), 0, ES(IMM8), 1, ES(END)})) \
     })
 
+/* jumps are all simple */
+#define JxxR(o8, o32) \
+    (IEA { \
+        ENC(OT(RREL), 1, 0, 0, 0, 0, o8, \
+            (ESA {ES(RREL8), 0, ES(END)})), \
+        ENC(OT(RREL), 2|4, 0, 0, 0, 0, 0x0F, \
+            (ESA {ES(FIX), o32, ES(RREL32), 0, ES(END)})) \
+    })
+#define JxxF(o32) \
+    (IEA { \
+        ENC(0, 0, 0, 0, 0, 0, 0x0F, \
+            (ESA {ES(FIX), o32, ES(FREL32), ES(END)})) \
+    })
+
 #define BLANK
 
 /***************************************************************
@@ -136,6 +150,56 @@ INST(IDIV, MULDIV(0xF6, MRM7, 0xF7, MRM7, BLANK));
 INST(IMUL, MULDIV(0xF6, MRM5, 0xF7, MRM5, MUL(
     0x0F, 0xAF,
     0x6B, 0x69, 0x69)));
+
+/* Jxx */
+#define JRF(nm, o) \
+    INST(nm ## R, JxxR((0x70+o), (0x80+o))); \
+    INST(nm ## F, JxxF((0x80+o)))
+JRF(JO,     0x0);
+JRF(JNO,    0x1);
+JRF(JB,     0x2);
+JRF(JC,     0x2);
+JRF(JNAE,   0x2);
+JRF(JNB,    0x3);
+JRF(JNC,    0x3);
+JRF(JAE,    0x3);
+JRF(JZ,     0x4);
+JRF(JE,     0x4);
+JRF(JNZ,    0x5);
+JRF(JNE,    0x5);
+JRF(JBE,    0x6);
+JRF(JNA,    0x6);
+JRF(JNBE,   0x7);
+JRF(JA,     0x7);
+JRF(JS,     0x8);
+JRF(JNS,    0x9);
+JRF(JP,     0xA);
+JRF(JPE,    0xA);
+JRF(JNP,    0xB);
+JRF(JPO,    0xB);
+JRF(JL,     0xC);
+JRF(JNGE,   0xC);
+JRF(JNL,    0xD);
+JRF(JGE,    0xD);
+JRF(JLE,    0xE);
+JRF(JNG,    0xE);
+JRF(JNLE,   0xF);
+JRF(JG,     0xF);
+#undef JRF
+
+/* JMP */
+INST(JMPR, (IEA {
+    ENC(OT(RREL), 1, 0, 0, 0, 0, 0xEB,
+        (ESA {ES(RREL8), 0, ES(END)})),
+    ENC(OT(RREL), 4, 0, 0, 0, 0, 0xE9,
+        (ESA {ES(RREL32), 0, ES(END)})),
+    ENC(OTRM, W2Q, 0, 0, 0, 0, 0xFF,
+        (ESA {ES(MRM4), 0, ES(END)}))
+}));
+INST(JMPF, (IEA {
+    ENC(0, 0, 0, 0, 0, 0, 0xE9,
+        (ESA {ES(FREL32), ES(END)}))
+}));
 
 /* LEA */
 INST(LEA, (IEA {

@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 
 #include "sja/sja.h"
 
-/* turn an operation list into a program fragment */
-void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
+/* append an operation to a program fragment */
+void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf, size_t *frel)
 {
     size_t oi, ii, si;
     int bad;
@@ -34,10 +35,17 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                 case SJA_X8664_OTYPE_IMM:
                     /* make sure it's small enough */
                     switch (enc->osz[si]) {
-                        case 8:  if (op.o[si].imm >= 0x80   || op.o[si].imm < -0x80)   bad = 1; break;
-                        case 16: if (op.o[si].imm >= 0x8000 || op.o[si].imm < -0x8000) bad = 1; break;
+                        case 1: if (op.o[si].imm >= 0x80   || op.o[si].imm < -0x80)   bad = 1; break;
+                        case 2: if (op.o[si].imm >= 0x8000 || op.o[si].imm < -0x8000) bad = 1; break;
                         /* FIXME: 32 */
                     }
+                    break;
+
+                case SJA_X8664_OTYPE_RREL:
+                case SJA_X8664_OTYPE_FREL:
+                    /* since RREL sizes are unpredictable (and I'm lazy) and
+                     * FREL sizes aren't known, it must be at least 32 bits */
+                    if (enc->osz[si] < 4) bad = 1;
                     break;
 
                 case SJA_X8664_OTYPE_REG:
@@ -134,11 +142,41 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
                 if (step == SJA_X8664_ES_IMM16) break;
                 WRITE_ONE_BUFFER(*buf, op.o[arg].imm >> 16);
                 WRITE_ONE_BUFFER(*buf, op.o[arg].imm >> 24);
-                if (step == SJA_X8664_ES_IMM32) break;
-                WRITE_ONE_BUFFER(*buf, op.o[arg].imm >> 32);
-                WRITE_ONE_BUFFER(*buf, op.o[arg].imm >> 40);
-                WRITE_ONE_BUFFER(*buf, op.o[arg].imm >> 48);
-                WRITE_ONE_BUFFER(*buf, op.o[arg].imm >> 56);
+                break;
+            }
+
+            case SJA_X8664_ES_RREL8:
+            case SJA_X8664_ES_RREL16:
+            case SJA_X8664_ES_RREL32:
+            {
+                unsigned char arg = enc->steps[++si];
+                long rel = op.o[arg].imm;
+
+                /* rel is currently relative to the beginning of the buffer.
+                 * Relocate it to where we are now */
+                rel -= buf->bufused;
+
+                /* then relocate it past the bits we're about to use */
+                switch (step) {
+                    case SJA_X8664_ES_RREL8:  rel -= 1; break;
+                    case SJA_X8664_ES_RREL16: rel -= 2; break;
+                    case SJA_X8664_ES_RREL32: rel -= 4; break;
+                }
+
+                /* then write it out */
+                WRITE_ONE_BUFFER(*buf, rel);
+                if (step == SJA_X8664_ES_RREL8) break;
+                WRITE_ONE_BUFFER(*buf, rel >> 8);
+                if (step == SJA_X8664_ES_RREL16) break;
+                WRITE_ONE_BUFFER(*buf, rel >> 16);
+                WRITE_ONE_BUFFER(*buf, rel >> 24);
+                break;
+            }
+
+            case SJA_X8664_ES_FREL32:
+            {
+                *frel = buf->bufused;
+                WRITE_BUFFER(*buf, "\0\0\0\0", 4);
                 break;
             }
 
@@ -353,4 +391,14 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf)
         }
 
     }
+}
+
+/* patch an frel entry to point to the next instruction */
+void sja_patchFrel(struct Buffer_uchar *buf, size_t frel)
+{
+    long rel = buf->bufused - frel - 4;
+    buf->buf[frel] = rel;
+    buf->buf[frel+1] = rel>>8;
+    buf->buf[frel+2] = rel>>16;
+    buf->buf[frel+3] = rel>>24;
 }
