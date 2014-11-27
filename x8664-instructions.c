@@ -16,58 +16,49 @@ struct SJA_X8664_Instruction sja_x8664_inst_ ## n = { \
 #define ESA (unsigned char[])
 #define ES(x) SJA_X8664_ES_ ## x
 
+/* many of the ALU instructions have the same suite of formats, so they can be
+ * abbreviated */
+#define ALU(rm8i8o, rm8i8r, \
+            rm16i16o, rm16i16r, \
+            rm64i32o, rm64i32r, \
+            rm64i8o, rm64i8r, \
+            rm8r8, \
+            rm64r64, \
+            r8rm8, \
+            r64rm64) \
+    (IEA { \
+        ENC(OTRM, 1, OT(IMM), 1, 0, 0, rm8i8o, \
+            (ESA {ES(rm8i8r), 0, ES(IMM8), 1, ES(END)})), \
+        ENC(OTRM, 2, OT(IMM), 2, 0, 0, rm16i16o, \
+            (ESA {ES(rm16i16r), 0, ES(IMM16), 1, ES(END)})), \
+        ENC(OTRM, D2Q, OT(IMM), 4, 0, 0, rm64i32o, \
+            (ESA {ES(rm64i32r), 0, ES(IMM32), 1, ES(END)})), \
+        ENC(OTRM, W2Q, OT(IMM), 1, 0, 0, rm64i8o, \
+            (ESA {ES(rm64i8r), 0, ES(IMM8), 1, ES(END)})), \
+        ENC(OTRM, 1, OT(REG), 1, 0, 0, rm8r8, \
+            (ESA {ES(MRMR), 1, 0, ES(END)})), \
+        ENC(OTRM, W2Q, OT(REG), W2Q, 0, 0, rm64r64, \
+            (ESA {ES(MRMR), 1, 0, ES(END)})), \
+        ENC(OT(REG), 1, OTRM, 1, 0, 0, r8rm8, \
+            (ESA {ES(MRMR), 0, 1, ES(END)})), \
+        ENC(OT(REG), W2Q, OTRM, W2Q, 0, 0, r64rm64, \
+            (ESA {ES(MRMR), 0, 1, ES(END)})) \
+    })
+
 /* ADD */
-INST(ADD, (IEA {
-    ENC(OTRM, 1, OT(IMM), 1, 0, 0,
-        0x80,
-        (ESA {ES(MRM0), 0, ES(IMM8), 1, ES(END)})),
-    ENC(OTRM, 2, OT(IMM), 2, 0, 0,
-        0x81,
-        (ESA {ES(MRM0), 0, ES(IMM16), 1, ES(END)})),
-    ENC(OTRM, D2Q, OT(IMM), 4, 0, 0,
-        0x81,
-        (ESA {ES(MRM0), 0, ES(IMM32), 1, ES(END)})),
-    ENC(OTRM, W2Q, OT(IMM), 1, 0, 0,
-        0x83,
-        (ESA {ES(MRM0), 0, ES(IMM8), 1, ES(END)})),
-    ENC(OTRM, 1, OT(REG), 1, 0, 0,
-        0x00,
-        (ESA {ES(MRMR), 1, 0, ES(END)})),
-    ENC(OTRM, W2Q, OT(REG), W2Q, 0, 0,
-        0x01,
-        (ESA {ES(MRMR), 1, 0, ES(END)})),
-    ENC(OT(REG), 1, OTRM, 1, 0, 0,
-        0x02,
-        (ESA {ES(MRMR), 0, 1, ES(END)})),
-    ENC(OT(REG), W2Q, OTRM, W2Q, 0, 0,
-        0x03,
-        (ESA {ES(MRMR), 0, 1, ES(END)}))
-}));
+INST(ADD, ALU(
+    0x80, MRM0,
+    0x81, MRM0,
+    0x81, MRM0,
+    0x83, MRM0,
+    0x00, 0x01, 0x02, 0x03
+));
 
 /* SUB */
-INST(SUB, (IEA {
-    ENC(OTRM, 1, OT(IMM), 1, 0, 0,
-        0x80,
-        (ESA {ES(MRM5), 0, ES(IMM8), 1, ES(END)})),
-    ENC(OTRM, 2, OT(IMM), 2, 0, 0,
-        0x81,
-        (ESA {ES(MRM5), 0, ES(IMM16), 1, ES(END)})),
-    ENC(OTRM, D2Q, OT(IMM), 4, 0, 0,
-        0x81,
-        (ESA {ES(MRM5), 0, ES(IMM32), 1, ES(END)})),
-    ENC(OTRM, W2Q, OT(IMM), 1, 0, 0,
-        0x83,
-        (ESA {ES(MRM5), 0, ES(IMM8), 1, ES(END)})),
-    ENC(OTRM, 1, OT(REG), 1, 0, 0,
-        0x28,
-        (ESA {ES(MRMR), 1, 0, ES(END)})),
-    ENC(OTRM, W2Q, OT(REG), W2Q, 0, 0,
-        0x29,
-        (ESA {ES(MRMR), 1, 0, ES(END)})),
-    ENC(OT(REG), 1, OTRM, 1, 0, 0,
-        0x2A,
-        (ESA {ES(MRMR), 0, 1, ES(END)})),
-    ENC(OT(REG), W2Q, OTRM, W2Q, 0, 0,
-        0x2B,
-        (ESA {ES(MRMR), 0, 1, ES(END)}))
-}));
+INST(SUB, ALU(
+    0x80, MRM5,
+    0x81, MRM5,
+    0x81, MRM5,
+    0x83, MRM5,
+    0x28, 0x29, 0x2A, 0x2B
+));
