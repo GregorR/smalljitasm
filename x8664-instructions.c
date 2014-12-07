@@ -125,6 +125,16 @@ INST(AND, ALU(
     0x20 ,0x21, 0x22, 0x23
 ));
 
+/* CALL */
+INST(CALL, (IEA {
+    ENC(OT(RREL), 4, 0, 0, 0, 0, 0xE8,
+        (ESA {ES(RREL32), 0, ES(END)})),
+    ENC(OT(FREL), 4, 0, 0, 0, 0, 0xE8,
+        (ESA {ES(FREL32), ES(END)})),
+    ENC(OTRM, D2Q, 0, 0, 0, 0, 0xFF,
+        (ESA {ES(MRM2), 0, ES(END)}))
+}));
+
 /* CMP */
 INST(CMP, ALU(
     0x80, MRM7,
