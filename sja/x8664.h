@@ -4,6 +4,12 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+#ifdef USE_SJA_SHORT_NAMES
+#ifndef USE_SJA_X8664_SHORT_NAMES
+#define USE_SJA_X8664_SHORT_NAMES 1
+#endif
+#endif
+
 /* our fundamental register list */
 enum sja_x8664_register_name {
     SJA_X8664_AX,
