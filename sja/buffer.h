@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009, 2010 Gregor Richards
+ * Copyright (C) 2009-2014 Gregor Richards
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,7 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
-#if defined(BUFFER_GGGGC)
-
-#elif defined(BUFFER_GC)
+#if defined(BUFFER_GC)
 #define _BUFFER_MALLOC GC_malloc
 #define _BUFFER_REALLOC GC_realloc
 #define _BUFFER_FREE GC_free
@@ -42,23 +40,6 @@
 #define BUFFER_DEFAULT_SIZE 1024
 
 /* auto-expanding buffer */
-#if defined(BUFFER_GGGGC)
-#define PTR_BUFFER(name, type) \
-struct Buffer_ ## name { \
-    size_t bufsz, bufused; \
-    type ## Array buf; \
-}
-
-#define DATA_BUFFER(name, type) \
-struct Buffer_ ## name { \
-    size_t bufsz, bufused; \
-    type *buf; \
-}
-
-DATA_BUFFER(char, char);
-DATA_BUFFER(int, int);
-
-#else
 #define BUFFER(name, type) \
 struct Buffer_ ## name { \
     size_t bufsz, bufused; \
@@ -67,24 +48,8 @@ struct Buffer_ ## name { \
 
 BUFFER(char, char);
 BUFFER(int, int);
-#endif
 
 /* initialize a buffer */
-#if defined(BUFFER_GGGGC)
-#define INIT_PTR_BUFFER(buffer) \
-{ \
-    (buffer).bufsz = BUFFER_DEFAULT_SIZE; \
-    (buffer).bufused = 0; \
-    (buffer).buf = GGC_NEW_PTR_ARRAY_VOIDP(BUFFER_DEFAULT_SIZE); \
-}
-#define INIT_DATA_BUFFER(buffer) \
-{ \
-    (buffer).bufsz = BUFFER_DEFAULT_SIZE; \
-    (buffer).bufused = 0; \
-    (buffer).buf = GGC_NEW_DATA_ARRAY_VOIDP(*(buffer).buf, BUFFER_DEFAULT_SIZE); \
-}
-
-#else
 #define INIT_BUFFER(buffer) \
 { \
     (buffer).bufsz = BUFFER_DEFAULT_SIZE; \
@@ -92,9 +57,7 @@ BUFFER(int, int);
     SF((buffer).buf, _BUFFER_MALLOC, NULL, (BUFFER_DEFAULT_SIZE * sizeof(*(buffer).buf))); \
 }
 
-#endif
-
-/* free a buffer (not for use with GGGGC) */
+/* free a buffer */
 #define FREE_BUFFER(buffer) \
 { \
     if ((buffer).buf) _BUFFER_FREE((buffer).buf); \
@@ -102,9 +65,6 @@ BUFFER(int, int);
 }
 
 /* the address of the free space in the buffer */
-#if defined(BUFFER_GGGGC)
-#define PTR_BUFFER_END(buffer) ((buffer).buf->d + (buffer).bufused)
-#endif
 #define BUFFER_END(buffer) ((buffer).buf + (buffer).bufused)
 
 /* mark new bytes in a buffer */
@@ -115,26 +75,11 @@ BUFFER(int, int);
 
 
 /* expand a buffer */
-#if defined(BUFFER_GGGGC)
-#define EXPAND_PTR_BUFFER(buffer) \
-{ \
-    (buffer).bufsz *= 2; \
-    (buffer).buf = GGC_REALLOC_PTR_ARRAY_VOIDP((buffer).buf, (buffer).bufsz); \
-}
-#define EXPAND_BUFFER(buffer) \
-{ \
-    (buffer).bufsz *= 2; \
-    (buffer).buf = GGC_REALLOC_DATA_ARRAY_VOIDP(*(buffer).buf, (buffer).buf, (buffer).bufsz); \
-}
-
-#else
 #define EXPAND_BUFFER(buffer) \
 { \
     (buffer).bufsz *= 2; \
     SF((buffer).buf, _BUFFER_REALLOC, NULL, ((buffer).buf, (buffer).bufsz * sizeof(*(buffer).buf))); \
 }
-
-#endif
 
 /* write a string to a buffer */
 #define WRITE_BUFFER(buffer, string, len) \
