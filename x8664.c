@@ -52,6 +52,11 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf, size_t *frel
                     /* make sure the register size is supported */
                     if (!(enc->osz[si] & op.o[si].reg.sz)) bad = 1;
                     break;
+
+                case SJA_X8664_OTYPE_MEM:
+                    /* make sure the memory size is supported */
+                    if (!(enc->osz[si] & op.o[si].sz)) bad = 1;
+                    break;
             }
             if (bad) break;
         }
@@ -77,7 +82,9 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf, size_t *frel
                 break;
 
             case SJA_X8664_OTYPE_MEM:
-                if (op.o[si].index.reg >= SJA_X8664_R8 ||
+                SETSZ(op.o[si].sz);
+                if (op.o[si].sz > 4 ||
+                    op.o[si].index.reg >= SJA_X8664_R8 ||
                     op.o[si].reg.reg >= SJA_X8664_R8 ||
                     op.o[si].index.sz > 4 ||
                     op.o[si].reg.sz > 4) needRex = 1;

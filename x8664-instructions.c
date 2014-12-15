@@ -224,13 +224,22 @@ INST(LEAVE, (IEA {
 }));
 
 /* MOV */
-INST(MOV, ALU(
-    0xC6, MRM0,
-    0xC7, MRM0,
-    0xC7, MRM0,
-    /* FIXME: WRONG */ 0xC6, MRM0,
-    0x88, 0x89, 0x8A, 0x8B
-));
+INST(MOV, (IEA {
+    ENC(OTRM, 1, OT(IMM), 1, 0, 0, 0xC6,
+        (ESA {ES(MRM0), 0, ES(IMM8), 1, ES(END)})),
+    ENC(OTRM, 2, OT(IMM), 2, 0, 0, 0xC7,
+        (ESA {ES(MRM0), 0, ES(IMM16), 1, ES(END)})),
+    ENC(OTRM, D2Q, OT(IMM), 4, 0, 0, 0xC7,
+        (ESA {ES(MRM0), 0, ES(IMM32), 1, ES(END)})),
+    ENC(OTRM, 1, OT(REG), 1, 0, 0, 0x88,
+        (ESA {ES(MRMR), 1, 0, ES(END)})),
+    ENC(OTRM, W2Q, OT(REG), W2Q, 0, 0, 0x89,
+        (ESA {ES(MRMR), 1, 0, ES(END)})),
+    ENC(OT(REG), 1, OTRM, 1, 0, 0, 0x8A,
+        (ESA {ES(MRMR), 0, 1, ES(END)})),
+    ENC(OT(REG), W2Q, OTRM, W2Q, 0, 0, 0x8B,
+        (ESA {ES(MRMR), 0, 1, ES(END)}))
+}));
 
 /* MUL */
 INST(MUL, MULDIV(0xF6, MRM4, 0xF7, MRM4, BLANK));

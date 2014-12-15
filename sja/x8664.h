@@ -52,6 +52,8 @@ enum sja_x8664_operand_type {
 
 struct SJA_X8664_Operand {
     unsigned char type;
+    /* the size, for memory operands (otherwise implied by registers) */
+    unsigned char sz;
     /* represents:
      *  * the immediate value for IMM
      *  * relative offset for RREL (relative to the beginning of the code buffer)
@@ -68,7 +70,7 @@ struct SJA_X8664_Operand {
 
 /* encoding for the "none" operand */
 #define SJA_X8664_ONONE \
-    ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_NONE, 0, \
+    ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_NONE, 0, 0, \
         (struct SJA_X8664_Register) {0, 0}, \
         (struct SJA_X8664_Register) {0, 0}, \
         0 \
@@ -76,7 +78,7 @@ struct SJA_X8664_Operand {
 
 /* encoding for immediate operands */
 #define SJA_X8664_OIMMISH(type, val) \
-    ((struct SJA_X8664_Operand) { type, val, \
+    ((struct SJA_X8664_Operand) { type, 0, val, \
         (struct SJA_X8664_Register) {0, 0}, \
         (struct SJA_X8664_Register) {0, 0}, \
         0 \
@@ -92,7 +94,7 @@ struct SJA_X8664_Operand {
 
 /* encodings for register operands */
 #define SJA_X8664_OREG(sz, reg) \
-    ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_REG, 0, \
+    ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_REG, 0, 0, \
         (struct SJA_X8664_Register) {0, 0}, \
         (struct SJA_X8664_Register) {(sz), (reg)}, \
         0 \
@@ -170,15 +172,15 @@ struct SJA_X8664_Operand {
 #endif /* USE_SJA_X8664_SHORT_NAMES */
 
 /* encodings for MEM (SIB) operands */
-#define SJA_X8664_OMEM(basesz, base, scale, indexsz, index, disp) \
-    ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_MEM, (scale), \
+#define SJA_X8664_OMEM(msz, basesz, base, scale, indexsz, index, disp) \
+    ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_MEM, (msz), (scale), \
         (struct SJA_X8664_Register) {(indexsz), (index)}, \
         (struct SJA_X8664_Register) {(basesz), (base)}, \
         (disp) \
     })
 #ifdef USE_SJA_X8664_SHORT_NAMES
-#define MEM(base, scale, index, disp) \
-    ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_MEM, (scale), \
+#define MEM(msz, base, scale, index, disp) \
+    ((struct SJA_X8664_Operand) { SJA_X8664_OTYPE_MEM, msz, (scale), \
         (index).reg, \
         (base).reg, \
         (disp) \
