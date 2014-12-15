@@ -114,7 +114,9 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf, size_t *frel
 #define REXX *rex |= 0x2
 #define REXR *rex |= 0x4
 
-    /* FIXME: This is where we would do the 16-bit prefix too */
+    /* need a specifier for 16-bit too */
+    if (sz == 2)
+        WRITE_ONE_BUFFER(*buf, 0x66);
 
     /* now write the opcode */
     WRITE_ONE_BUFFER(*buf, enc->opcode);
