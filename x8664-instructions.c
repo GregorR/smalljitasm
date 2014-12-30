@@ -277,10 +277,16 @@ INST(POP, (IEA {
 
 /* PUSH */
 INST(PUSH, (IEA {
-ENC(OT(REG), W2Q, 0, 0, 0, 0, 0x50,
-    (ESA {ES(ADDREG), 0, ES(END)})),
-ENC(OTRM, W2Q, 0, 0, 0, 0, 0xFF,
-    (ESA {ES(MRM0), 0, ES(END)}))
+    ENC(OT(REG), W2Q, 0, 0, 0, 0, 0x50,
+        (ESA {ES(ADDREG), 0, ES(END)})),
+    ENC(OTRM, W2Q, 0, 0, 0, 0, 0xFF,
+        (ESA {ES(MRM0), 0, ES(END)}))
+}));
+
+/* REP (actually a prefix) */
+INST(REP, (IEA {
+    ENC(0, 0, 0, 0, 0, 0, 0xF3,
+        (ESA {ES(END)}))
 }));
 
 /* RET */
@@ -331,6 +337,20 @@ INST(SHR, SHIFT(0xC0, MRM5, 0xC1, MRM5));
 INST(SHRD, (IEA {
     ENC(OTRM, W2Q, OT(REG), W2Q, OT(IMM), 1, 0x0F,
         (ESA {ES(FIX), 0xAC, ES(MRMR), 1, 0, ES(IMM8), 2, ES(END)}))
+}));
+
+/* STD */
+INST(STD, (IEA {
+    ENC(0, 0, 0, 0, 0, 0, 0xFD,
+        (ESA {ES(END)}))
+}));
+
+/* STOS */
+INST(STOS, (IEA {
+    ENC(OTRM, 1, 0, 0, 0, 0, 0xAA,
+        (ESA {ES(END)})),
+    ENC(OTRM, W2Q, 0, 0, 0, 0, 0xAB,
+        (ESA {ES(END)}))
 }));
 
 /* XOR */
