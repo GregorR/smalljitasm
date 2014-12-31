@@ -65,7 +65,7 @@ void sja_compile(struct SJA_Operation op, struct Buffer_uchar *buf, size_t *frel
 
     if (ii == op.inst->encodingCt) {
         fprintf(stderr, "Invalid operation!\n");
-        exit(1);
+        abort();
     }
 
     /* choose the size to use for registers/memory locations,

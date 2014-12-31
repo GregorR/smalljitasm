@@ -353,6 +353,20 @@ INST(STOS, (IEA {
         (ESA {ES(END)}))
 }));
 
+/* TEST */
+INST(TEST, (IEA {
+    ENC(OTRM, 1, OT(IMM), 1, 0, 0, 0xF6,
+        (ESA {ES(MRM0), 0, ES(IMM8), 1, ES(END)})),
+    ENC(OTRM, 2, OT(IMM), 2, 0, 0, 0xF7,
+        (ESA {ES(MRM0), 0, ES(IMM16), 1, ES(END)})),
+    ENC(OTRM, W2Q, OT(IMM), 4, 0, 0, 0xF7,
+        (ESA {ES(MRM0), 0, ES(IMM32), 1, ES(END)})),
+    ENC(OTRM, 1, OT(REG), 1, 0, 0, 0x84,
+        (ESA {ES(MRMR), 0, 1, ES(END)})),
+    ENC(OTRM, D2Q, OT(REG), D2Q, 0, 0, 0x85,
+        (ESA {ES(MRMR), 0, 1, ES(END)}))
+}));
+
 /* XOR */
 INST(XOR, ALU(
     0x80, MRM6,
