@@ -76,9 +76,9 @@ struct SJA_X8664_Instruction sja_x8664_inst_ ## n = { \
 #define MULDIV(r8o, r8r, r64o, r64r, mul) \
     (IEA { \
         ENC(OTRM, 1, 0, 0, 0, 0, r8o, \
-            (ESA {ES(r8r), ES(END)})), \
+            (ESA {ES(r8r), 0, ES(END)})), \
         ENC(OTRM, W2Q, 0, 0, 0, 0, r64o, \
-            (ESA {ES(r64r), ES(END)})) \
+            (ESA {ES(r64r), 0, ES(END)})) \
         mul \
     })
 
